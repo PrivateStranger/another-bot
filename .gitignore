@@ -1,0 +1,5 @@
+node_modules/
+.env
+.ua/
+.understand-anything/
+.DS_Store
