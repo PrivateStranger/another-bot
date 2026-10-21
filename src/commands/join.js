@@ -1,7 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
-const { client } = require('../index');
-const playce = require('play-dl'); // I will add this dependency
+const { getSubscription } = require('../music/manager');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -9,35 +7,11 @@ module.exports = {
         .setDescription('Bot masuk ke voice channel dan jadi penjaga abadi'),
     async execute(interaction) {
         const channel = interaction.member.voice.channel;
-        if (!channel) return interaction.reply('Lu harus masuk voice channel dulu!');
-
-        const connection = joinVoiceChannel({
-            channelId: channel.id,
-            guildId: interaction.guildId,
-            adapterCreator: interaction.guild.voiceAdapterCreator,
-        });
-
-        // Zen Mode Logic
-        const player = createAudioPlayer();
-        
-        const playZenMode = async () => {
-            try {
-                const stream = await playce.stream(process.env.DEFAULT_MUSIC_URL);
-                const resource = createAudioResource(stream.stream, { inputType: stream.type });
-                player.play(resource);
-            } catch (e) {
-                console.error('Zen mode error:', e);
-            }
-        };
-
-        player.on(AudioPlayerStatus.Idle, () => {
-            console.log('Music idle, restarting Zen Mode...');
-            playZenMode();
-        });
-
-        connection.subscribe(player);
-        playZenMode();
-
-        await interaction.reply(`✅ Gue udah standby di ${channel.name}. Gue bakal jaga tempat ini sampai kiamat.`);
+        if (!channel) return interaction.reply('Anda harus berada di voice channel terlebih dulu!');
+        // Init / retrieve subscription, will also start Zen mode via idle handling
+        const sub = getSubscription(interaction.guild.id, channel);
+        // Ensure Zen mode starts if queue empty
+        sub.processQueue();
+        await interaction.reply(`✅ Bot bergabung di ${channel.name} dan akan menjaga suara dengan Zen Mode.`);
     },
 };
